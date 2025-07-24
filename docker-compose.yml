@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: ./backend
+    container_name: doan-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://mongo:27017/doan
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - mongo
+  client:
+    build: ./client
+    container_name: doan-client
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+  mongo:
+    image: mongo:6.0
+    container_name: doan-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+volumes:
+  mongo-data:
