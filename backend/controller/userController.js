@@ -1,36 +1,41 @@
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
 // Generate JWT Token
 const generateToken = (id) => {
+  console.log("JWT_SECRET:", process.env.JWT_SECRET ? "EXISTS" : "MISSING");
+  console.log("Generating token for ID:", id);
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE
+    expiresIn: "30d",
   });
 };
 // Thêm vào nếu chưa có
 const getUserById = async (req, res) => {
-  res.status(501).json({ message: 'Not implemented' });
+  res.status(501).json({ message: "Not implemented" });
 };
 // @desc    Register user
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = async (req, res) => {
   try {
+    console.log("Register request received:", req.body);
     const { name, email, password } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email }).maxTimeMS(30000);
     if (userExists) {
-      return res.status(400).json({ message: 'Email đã được sử dụng' });
+      return res.status(400).json({ message: "Email đã được sử dụng" });
     }
 
+    console.log("Creating user...");
     // Create user
     const user = await User.create({
       name,
       email,
-      password
+      password,
     });
 
+    console.log("User created, generating token...");
     if (user) {
       res.status(201).json({
         success: true,
@@ -39,14 +44,15 @@ const registerUser = async (req, res) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          token: generateToken(user._id)
-        }
+          token: generateToken(user._id),
+        },
       });
     }
   } catch (error) {
-    res.status(400).json({ 
+    console.error("Registration error:", error);
+    res.status(400).json({
       success: false,
-      message: error.message 
+      message: error.message,
     });
   }
 };
@@ -60,7 +66,7 @@ const loginUser = async (req, res) => {
 
     // Check for user email with timeout
     const user = await User.findOne({ email })
-      .select('+password')
+      .select("+password")
       .maxTimeMS(30000); // 30 seconds timeout
 
     if (user && (await user.comparePassword(password))) {
@@ -71,19 +77,19 @@ const loginUser = async (req, res) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          token: generateToken(user._id)
-        }
+          token: generateToken(user._id),
+        },
       });
     } else {
-      res.status(401).json({ 
+      res.status(401).json({
         success: false,
-        message: 'Email hoặc mật khẩu không đúng' 
+        message: "Email hoặc mật khẩu không đúng",
       });
     }
   } catch (error) {
-    res.status(400).json({ 
+    res.status(400).json({
       success: false,
-      message: error.message 
+      message: error.message,
     });
   }
 };
@@ -94,15 +100,15 @@ const loginUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    res.status(400).json({ 
+    res.status(400).json({
       success: false,
-      message: error.message 
+      message: error.message,
     });
   }
 };
@@ -131,19 +137,19 @@ const updateUserProfile = async (req, res) => {
           name: updatedUser.name,
           email: updatedUser.email,
           role: updatedUser.role,
-          token: generateToken(updatedUser._id)
-        }
+          token: generateToken(updatedUser._id),
+        },
       });
     } else {
-      res.status(404).json({ 
+      res.status(404).json({
         success: false,
-        message: 'Không tìm thấy người dùng' 
+        message: "Không tìm thấy người dùng",
       });
     }
   } catch (error) {
-    res.status(400).json({ 
+    res.status(400).json({
       success: false,
-      message: error.message 
+      message: error.message,
     });
   }
 };
@@ -154,68 +160,67 @@ const updateUserProfile = async (req, res) => {
 const createDefaultAdmin = async (req, res) => {
   try {
     // Chỉ cho phép trong môi trường development
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ 
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({
         success: false,
-        message: 'Chức năng này không khả dụng trong production' 
+        message: "Chức năng này không khả dụng trong production",
       });
     }
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: 'nhuthoas04@gmail.com' });
-    
+    const existingAdmin = await User.findOne({ email: "nhuthoas04@gmail.com" });
+
     if (existingAdmin) {
       // Update role to admin if not already
-      if (existingAdmin.role !== 'admin') {
-        existingAdmin.role = 'admin';
+      if (existingAdmin.role !== "admin") {
+        existingAdmin.role = "admin";
         await existingAdmin.save();
         return res.status(200).json({
           success: true,
-          message: 'Đã cập nhật tài khoản thành admin',
+          message: "Đã cập nhật tài khoản thành admin",
           data: {
-            email: 'nhuthoas04@gmail.com',
-            password: 'admin12345'
-          }
+            email: "nhuthoas04@gmail.com",
+            password: "admin12345",
+          },
         });
       }
-      
+
       return res.status(200).json({
         success: true,
-        message: 'Tài khoản admin đã tồn tại',
+        message: "Tài khoản admin đã tồn tại",
         data: {
-          email: 'nhuthoas04@gmail.com',
-          password: 'admin12345'
-        }
+          email: "nhuthoas04@gmail.com",
+          password: "admin12345",
+        },
       });
     }
 
     // Create new admin account
     const adminUser = await User.create({
-      name: 'Administrator Eclipse',
-      email: 'nhuthoas04@gmail.com',
-      password: 'admin12345',
-      role: 'admin'
+      name: "Administrator Eclipse",
+      email: "nhuthoas04@gmail.com",
+      password: "admin12345",
+      role: "admin",
     });
 
     res.status(201).json({
       success: true,
-      message: 'Tài khoản admin đã được tạo thành công',
+      message: "Tài khoản admin đã được tạo thành công",
       data: {
-        email: 'nhuthoas04@gmail.com',
-        password: 'admin12345',
+        email: "nhuthoas04@gmail.com",
+        password: "admin12345",
         instructions: [
-          '1. Truy cập: http://localhost:3000/login',
-          '2. Đăng nhập với email: nhuthoas04@gmail.com',
-          '3. Mật khẩu: admin12345',
-          '4. Truy cập trang admin: http://localhost:3000/admin'
-        ]
-      }
+          "1. Truy cập: http://localhost:3000/login",
+          "2. Đăng nhập với email: nhuthoas04@gmail.com",
+          "3. Mật khẩu: admin12345",
+          "4. Truy cập trang admin: http://localhost:3000/admin",
+        ],
+      },
     });
-
   } catch (error) {
-    res.status(400).json({ 
+    res.status(400).json({
       success: false,
-      message: error.message 
+      message: error.message,
     });
   }
 };
@@ -226,19 +231,19 @@ const createDefaultAdmin = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({})
-      .select('-password') // Exclude password field
+      .select("-password") // Exclude password field
       .sort({ createdAt: -1 }); // Sort by newest first
 
     res.status(200).json({
       success: true,
       count: users.length,
-      data: users
+      data: users,
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error("Error fetching users:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server khi lấy danh sách người dùng'
+      message: "Lỗi server khi lấy danh sách người dùng",
     });
   }
 };
@@ -250,19 +255,19 @@ const getUserStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const activeUsers = await User.countDocuments({ isActive: true });
-    const adminUsers = await User.countDocuments({ role: 'admin' });
-    
+    const adminUsers = await User.countDocuments({ role: "admin" });
+
     // Users registered today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const todayUsers = await User.countDocuments({
       createdAt: {
         $gte: today,
-        $lt: tomorrow
-      }
+        $lt: tomorrow,
+      },
     });
 
     res.status(200).json({
@@ -271,14 +276,14 @@ const getUserStats = async (req, res) => {
         total: totalUsers,
         active: activeUsers,
         admin: adminUsers,
-        today: todayUsers
-      }
+        today: todayUsers,
+      },
     });
   } catch (error) {
-    console.error('Error fetching user stats:', error);
+    console.error("Error fetching user stats:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server khi lấy thống kê người dùng'
+      message: "Lỗi server khi lấy thống kê người dùng",
     });
   }
 };
@@ -295,7 +300,7 @@ const updateUserStatus = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy người dùng'
+        message: "Không tìm thấy người dùng",
       });
     }
 
@@ -304,14 +309,14 @@ const updateUserStatus = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Đã ${isActive ? 'kích hoạt' : 'vô hiệu hóa'} người dùng`,
-      data: user
+      message: `Đã ${isActive ? "kích hoạt" : "vô hiệu hóa"} người dùng`,
+      data: user,
     });
   } catch (error) {
-    console.error('Error updating user status:', error);
+    console.error("Error updating user status:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server khi cập nhật trạng thái người dùng'
+      message: "Lỗi server khi cập nhật trạng thái người dùng",
     });
   }
 };
@@ -327,7 +332,7 @@ const deleteUser = async (req, res) => {
     if (id === req.user.id) {
       return res.status(400).json({
         success: false,
-        message: 'Không thể xóa tài khoản của chính mình'
+        message: "Không thể xóa tài khoản của chính mình",
       });
     }
 
@@ -335,7 +340,7 @@ const deleteUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy người dùng'
+        message: "Không tìm thấy người dùng",
       });
     }
 
@@ -343,13 +348,13 @@ const deleteUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Đã xóa người dùng thành công'
+      message: "Đã xóa người dùng thành công",
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error("Error deleting user:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server khi xóa người dùng'
+      message: "Lỗi server khi xóa người dùng",
     });
   }
 };
@@ -364,5 +369,5 @@ module.exports = {
   getUserStats,
   updateUserStatus,
   deleteUser,
-  getUserById
+  getUserById,
 };

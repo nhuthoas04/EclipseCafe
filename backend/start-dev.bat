@@ -1,0 +1,9 @@
+@echo off
+echo Starting Eclipse Cafe Backend in Development Mode...
+echo.
+echo Installing dependencies...
+call npm install
+echo.
+echo Starting server with nodemon...
+call npm run dev
+pause
