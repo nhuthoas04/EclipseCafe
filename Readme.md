@@ -79,7 +79,6 @@ DOAN/
 - 🛍️ **Khách hàng**: Xem sản phẩm, đặt hàng, thanh toán
 - 👨‍💼 **Admin**: Quản lý sản phẩm, đơn hàng, thống kê
 - ⭐ **Sản phẩm nổi bật**: Hiển thị ưu tiên trên trang chủ
-- 🔐 **Xác thực**: JWT + Google OAuth
 - 📊 **Dashboard**: Thống kê doanh thu và đơn hàng
 
 ## 📚 Tài liệu
